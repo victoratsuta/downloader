@@ -15,14 +15,14 @@ class DownloadReport extends Command
      *
      * @var string
      */
-    protected $signature = 'download:report {limit}';
+    protected $signature = 'download:report {count}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Get report of current download jobs';
+    protected $description = 'Get report';
 
     /**
      * Create a new command instance.
@@ -42,8 +42,12 @@ class DownloadReport extends Command
      */
     public function handle()
     {
-        $headers = ['Status', 'Url', 'Path'];
+        $headers = ['Url', 'Path', 'Status'];
 
-        $this->table($headers, Downloader::getReport($this->argument('limit')));
+        $resources = Downloader::getReport($this->argument('count'));
+
+        $report = Downloader::normalaizeReport($resources);
+
+        $this->table($headers, $report);
     }
 }

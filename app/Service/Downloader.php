@@ -9,6 +9,7 @@
 namespace App\Service;
 
 
+use App\Jobs\DownloadResource;
 use App\Models\Resource;
 use Illuminate\Support\Facades\Storage;
 use Imtigger\LaravelJobStatus\JobStatus;
@@ -17,42 +18,65 @@ class Downloader
 {
 
     private $path = '/public/resources/';
+    private $publicPath = '/storage/resources/';
     private $fileName;
-    private $jobId;
+    private $jobStatusId;
     protected $url;
 
-    public function __construct(string $url, int $jobId)
+    public function run(): void
     {
-        $this->url = $url;
-        $this->jobId = $jobId;
+
+        $job = new DownloadResource($this->url);
+        dispatch($job);
+
+        $this->jobStatusId = $job->getJobStatusId();
+
+        $this->saveReport();
+
     }
 
-    public function download() : void
+    public function download(): void
     {
 
         $contents = file_get_contents($this->url);
-        $this->fileName = $this->path . substr($this->url, strrpos($this->url, '/') + 1);
-        Storage::put($this->fileName, $contents);
+        $fileName = $this->path . substr($this->url, strrpos($this->url, '/') + 1);
+        $this->fileName = $this->publicPath . substr($this->url, strrpos($this->url, '/') + 1);
+        Storage::put($fileName, $contents);
 
     }
 
-    public function saveReport() : void
+
+    public function setUrl($url): void
+    {
+
+        $this->url = $url;
+
+    }
+
+    public function setJobStatusIdFromJobId($jobId): void
+    {
+
+        $this->jobStatusId = JobStatus::where('job_id', $jobId)->first()->id;
+
+    }
+
+    public function saveReport(): void
     {
 
         Resource::create(
             [
                 'url' => $this->url,
-                'job_id' => $this->jobId
+                'job_status_id' => $this->jobStatusId
 
             ]
         );
 
     }
 
-    public function updateReport() : void
+    public function addDownloadPathRoReport(): void
     {
 
-        Resource::where('job_id', $this->jobId)->update(
+        Resource::where('job_status_id', $this->jobStatusId)->update(
             [
                 'path' => $this->fileName,
 
@@ -61,31 +85,39 @@ class Downloader
 
     }
 
-    static public function getReport(int $take): array
+    static public function getReport(int $take = 0): object
     {
-        $report = [];
 
-        foreach (JobStatus::take($take)->get() as $job){
+        if ($take === 0) {
 
-            $resource = Resource::where('job_id', $job->id)->first();
+            $resources = Resource::paginate();
 
-            $jobReport =
-                [
-                    'status' => $job->status,
-                    'url' => $resource->url
-                ];
+        } else {
 
-            if($job->is_finished){
-
-                $jobReport['path'] = $resource->path;
-
-            }
-
-            $report[] = $jobReport;
+            $resources = Resource::take($take)->get();
 
         }
 
-        return $report;
+        foreach ($resources as &$resource) {
+
+            $job = JobStatus::find($resource->job_status_id);
+
+            $resource->status = $job->status;
+
+        }
+
+        return $resources;
+
+    }
+
+    static public function normalaizeReport(object $report): object
+    {
+        return $report->map(function ($report) {
+            return collect($report->toArray())
+                ->only(['status', 'url', 'path'])
+                ->all();
+        });
+
     }
 
 }

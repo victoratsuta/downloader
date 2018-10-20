@@ -14,12 +14,13 @@ class CreateResourcesTable extends Migration
     public function up()
     {
         Schema::create('resources', function (Blueprint $table) {
+
             $table->increments('id');
 
             $table->text('url');
             $table->text('path')->nullable();
 
-            $table->string('job_id', 2)
+            $table->string('job_status_id', 2)
                 ->nullable();
 
             $table->timestamps();

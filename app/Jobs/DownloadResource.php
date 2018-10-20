@@ -4,17 +4,17 @@ namespace App\Jobs;
 
 use App\Service\Downloader;
 use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Imtigger\LaravelJobStatus\Trackable;
 
 class DownloadResource implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, Trackable;
 
-    public $tries = 10;
+    public $tries = 3;
 
     protected $downloader;
     private $url;
@@ -38,10 +38,11 @@ class DownloadResource implements ShouldQueue
      */
     public function handle()
     {
-        $this->downloader = new Downloader($this->url, $this->job->getJobId());
-        $this->downloader->saveReport();
+        $this->downloader = new Downloader();
+        $this->downloader->setUrl($this->url);
+        $this->downloader->setJobStatusIdFromJobId($this->job->getJobId());
         $this->downloader->download();
-        $this->downloader->updateReport();
+        $this->downloader->addDownloadPathRoReport();
 
     }
 }

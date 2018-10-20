@@ -2,11 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Service\Downloader;
 use Illuminate\Console\Command;
-use \App\Jobs\DownloadResource as DownloadResourceJob;
 
 class DownloadResource extends Command
 {
+
+    private $downloader;
 
     /**
      * The name and signature of the console command.
@@ -41,7 +43,9 @@ class DownloadResource extends Command
     public function handle()
     {
 
-        DownloadResourceJob::dispatch($this->argument('url'));
+        $this->downloader = new Downloader();
+        $this->downloader->setUrl($this->argument('url'));
+        $this->downloader->run();
 
         $this->info("Job in queue");
 
