@@ -70,6 +70,6 @@ Example:
   
 ## Test
 
-Specify `TEST_URL_FILE` and `TEST_URL_FILE` in .env, also don`t forget about db configs for testing.
+Specify `TEST_URL_FILE` and `TEST_STORAGE_FILE` in .env, also don`t forget about db configs for testing.
 
 Use `phpunit` or `./vendor/bin/phpunit` to run the tests.
